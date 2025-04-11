@@ -40,8 +40,8 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 bot.remove_command('help')  # Add this line to remove the built-in help command
 
 # Global variables
-user_tilt_scores = defaultdict(lambda: {"score": 50, "last_updated": time.time(), "samples": []})
-TILT_DECAY_RATE = 2  # Points per minute that tilt score decreases
+user_tilt_scores = defaultdict(lambda: {"score": 0, "last_updated": time.time(), "samples": []})
+TILT_DECAY_RATE = 5  # Points per minute that tilt score decreases
 MAX_SAMPLES = 10  # Maximum number of voice samples to store per user
 voice_clients = {}  # Store voice clients for each guild
 processing_queues = {}  # Audio processing queues
