@@ -137,6 +137,34 @@ TILT_KEYWORDS = {
     r'\bjustff\b': 5, # just ff
 }
 
+# Add this after your TILT_KEYWORDS dictionary
+POSITIVE_KEYWORDS = {
+    r'\bgood\s+(?:job|play|kill|shot|ult|move|call)\b': 3,  # good job, good play, etc.
+    r'\bnice\s+(?:job|play|kill|shot|ult|move|call)\b': 3,  # nice job, nice play, etc.
+    r'\bgreat\s+(?:job|play|kill|shot|ult|move|call)\b': 4,  # great job, great play, etc.
+    r'\bwell\s+played\b': 4,  # well played
+    r'\bwell\s+done\b': 3,  # well done
+    r'\bgood\s+try\b': 2,  # good try
+    r'\bthank\s+(?:you|u)\b': 2,  # thank you
+    r'\bthanks\b': 1,  # thanks
+    r'\bwe\s+can\s+(?:win|do)\s+(?:this)\b': 4,  # we can win this, we can do this
+    r'\bwe\s+got\s+this\b': 3,  # we got this
+    r'\bno\s+(?:problem|worries)\b': 2,  # no problem, no worries
+    r'\byou\'?re?\s+(?:good|great|amazing|awesome)\b': 3,  # you're good, you're great
+    r'\bnp\b': 1,  # np (no problem)
+    r'\bI\'?ll?\s+help\b': 3,  # I'll help
+    r'\blet\'?s\s+group\b': 2,  # let's group
+    r'\bstick\s+together\b': 2,  # stick together
+    r'\bI\s+believe\b': 3,  # I believe
+    r'\bcomeback\b': 2,  # comeback
+    r'\bwinnable\b': 2,  # winnable
+    r'\bthat\s+was\s+(?:awesome|amazing|sick|insane)\b': 4,  # that was awesome
+    r'\bgood\s+game\b': 2,  # good game (not sarcastic)
+    r'\bgg\b': 1,  # gg (not "gg ez")
+    r'\bcarry\s+(?:on|us)\b': 3,  # carry on, carry us
+    r'\bhave\s+fun\b': 2,  # have fun
+}
+
 # Voice indicators of tilt
 VOICE_TILT_INDICATORS = {
     'amplitude': {'threshold': 0.7, 'score': 5},  # Loud volume
@@ -240,9 +268,16 @@ async def tilt(ctx, member: discord.Member = None):
     # Add recent triggers if available
     if user_tilt_scores[member.id].get("triggers", []):
         triggers = user_tilt_scores[member.id]["triggers"][-3:]  # Get last 3 triggers
+        formatted_triggers = []
+        for trigger in triggers:
+            if trigger.startswith("+"):  # Positive triggers
+                formatted_triggers.append(f"• 🟢 {trigger[1:]}")  # Green circle for positive
+            else:
+                formatted_triggers.append(f"• 🔴 {trigger}")  # Red circle for negative
+                
         embed.add_field(
-            name="Recent Tilt Triggers",
-            value="\n".join([f"• {trigger}" for trigger in triggers]) or "None detected",
+            name="Recent Triggers",
+            value="\n".join(formatted_triggers) or "None detected",
             inline=False
         )
     
@@ -251,6 +286,10 @@ async def tilt(ctx, member: discord.Member = None):
 @bot.command(name='tilts')
 async def tilts(ctx):
     """Check all players' tilt levels"""
+    # Apply tilt decay to all users
+    for user_id in list(user_tilt_scores.keys()):
+        update_tilt_decay(user_id)
+    
     if not user_tilt_scores:
         await ctx.send("No tilt data available yet!")
         return
@@ -261,35 +300,55 @@ async def tilts(ctx):
         color=discord.Color.purple()
     )
     
+    # Sort users by tilt score
     sorted_users = sorted(user_tilt_scores.items(), 
-                         key=lambda x: x[1]["score"], 
-                         reverse=True)
+                          key=lambda x: x[1]["score"], 
+                          reverse=True)
+    
+    users_added = 0
     
     for user_id, data in sorted_users:
-        update_tilt_decay(user_id)
         tilt_score = data["score"]
-        user = bot.get_user(user_id)
         
+        # Try both methods to get the user
+        user = bot.get_user(user_id)
+        if not user and ctx.guild:
+            user = ctx.guild.get_member(user_id)
+            
         if user:
+            # Round the tilt score to avoid float display issues
+            tilt_score = round(tilt_score, 1)
             progress = "█" * int(tilt_score // 10) + "░" * int(10 - (tilt_score // 10))
             embed.add_field(
                 name=f"{user.display_name}: {tilt_score}/100",
                 value=f"`{progress}`\n{get_tilt_message(tilt_score)[:50]}",
                 inline=False
             )
+            users_added += 1
+            
+            # Discord has a 25 field limit per embed
+            if users_added >= 25:
+                break
     
-    await ctx.send(embed=embed)
+    if users_added > 0:
+        await ctx.send(embed=embed)
+    else:
+        # If we have scores but couldn't find any users
+        if user_tilt_scores:
+            await ctx.send("Could not find any users with tilt scores. They may have left the server.")
+        else:
+            await ctx.send("No tilt data available yet!")
 
 @bot.command(name='reset')
 async def reset(ctx, member: discord.Member = None):
     """Reset tilt scores for a user or everyone"""
     if member:
-        user_tilt_scores[member.id] = {"score": 50, "last_updated": time.time(), "samples": [], "triggers": []}
-        await ctx.send(f"Reset tilt score for {member.display_name} to 50.")
+        user_tilt_scores[member.id] = {"score": 0, "last_updated": time.time(), "samples": [], "triggers": []}
+        await ctx.send(f"Reset tilt score for {member.display_name} to 0.")
     else:
         for user_id in list(user_tilt_scores.keys()):
-            user_tilt_scores[user_id] = {"score": 50, "last_updated": time.time(), "samples": [], "triggers": []}
-        await ctx.send("Reset tilt scores for all users to 50.")
+            user_tilt_scores[user_id] = {"score": 0, "last_updated": time.time(), "samples": [], "triggers": []}
+        await ctx.send("Reset tilt scores for all users to 0.")
 
 @bot.command(name='help')
 async def help_command(ctx):
@@ -843,29 +902,31 @@ async def on_message(message):
                 await message.channel.send(f"⚠️ **Tilt Alert**: {message.author.mention} is reaching critical tilt levels! ({user_tilt_scores[message.author.id]['score']}/100)")
 
 def analyze_text_for_tilt(text):
-    """Analyze text for signs of tilt using sentiment analysis or fallback to keyword method"""
+    """Analyze text for signs of tilt or positive statements"""
     # Fall back to keyword method if text is too short or LLM not available
     if tilt_pipeline is None or len(text) < 5:
         logger.info(f"Using keyword fallback for: '{text}' (LLM available: {tilt_pipeline is not None}, text length: {len(text)})")
         return fallback_analyze_text_for_tilt(text)
     
     try:
-        # Use sentiment analysis to determine tilt
+        # Use sentiment analysis to determine tilt or positivity
         logger.info(f"Sending to sentiment analyzer: '{text}'")
         result = tilt_pipeline(text)[0]
         logger.info(f"Sentiment analysis result: {result}")
         
-        # Convert negative sentiment to tilt score (0-20)
+        # Convert sentiment to tilt score (-20 to 20)
+        # Negative sentiment = positive tilt score (increasing tilt)
+        # Positive sentiment = negative tilt score (decreasing tilt)
         if result['label'] == 'NEGATIVE':
             # Convert confidence score (0-1) to tilt score (0-20)
             tilt_score = int(result['score'] * 20)
-            logger.info(f"Sentiment tilt analysis: '{text}' -> Score: {tilt_score}")
+            logger.info(f"Sentiment tilt analysis (negative): '{text}' -> Score: {tilt_score}")
             return tilt_score
         else:
-            # If positive sentiment, small tilt score for potential false negatives
-            tilt_score = int((1 - result['score']) * 5)  # Max 5 for false negatives
-            logger.info(f"Sentiment tilt analysis (positive): '{text}' -> Score: {tilt_score}")
-            return tilt_score
+            # If positive sentiment, reduce tilt (negative score)
+            tilt_reduction = -int(result['score'] * 15)  # Max 15 point reduction
+            logger.info(f"Sentiment tilt analysis (positive): '{text}' -> Score: {tilt_reduction}")
+            return tilt_reduction
             
     except Exception as e:
         logger.error(f"Error in sentiment analysis: {e}")
@@ -873,26 +934,32 @@ def analyze_text_for_tilt(text):
 
 # Rename existing keyword-based analysis as fallback
 def fallback_analyze_text_for_tilt(text):
-    """Analyze text for signs of tilt using keywords (fallback method)"""
-    score_increase = 0
+    """Analyze text for signs of tilt or positivity using keywords"""
+    score_change = 0
     
-    # Check for tilt keywords
+    # Check for tilt keywords (increase tilt)
     for pattern, value in TILT_KEYWORDS.items():
         matches = re.findall(pattern, text, re.IGNORECASE)
-        score_increase += len(matches) * value
+        score_change += len(matches) * value
     
-    # Check for all caps (shouting)
-    if len(text) > 5 and text.isupper():
-        score_increase += 5
+    # Check for positive keywords (decrease tilt)
+    for pattern, value in POSITIVE_KEYWORDS.items():
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        score_change -= len(matches) * value
     
-    # Check for repeated punctuation (!!! or ???)
-    if re.search(r'[!?]{3,}', text):
-        score_increase += 3
+    # Check for all caps (shouting) - only if the overall message isn't positive
+    if score_change >= 0 and len(text) > 5 and text.isupper():
+        score_change += 5
     
-    return min(score_increase, 20)  # Cap the increase at 20 points per message
+    # Check for repeated punctuation (!!! or ???) - only if the overall message isn't positive
+    if score_change >= 0 and re.search(r'[!?]{3,}', text):
+        score_change += 3
+    
+    # Cap the score change (both positive and negative)
+    return max(-15, min(score_change, 20))
 
-def update_tilt_score(user_id, score_increase, trigger=None):
-    """Update a user's tilt score"""
+def update_tilt_score(user_id, score_change, trigger=None):
+    """Update a user's tilt score - positive values increase tilt, negative values reduce it"""
     update_tilt_decay(user_id)
     
     # Initialize if new user
@@ -904,17 +971,73 @@ def update_tilt_score(user_id, score_increase, trigger=None):
             "triggers": []
         }
     
-    # Update score
-    user_tilt_scores[user_id]["score"] = min(100, user_tilt_scores[user_id]["score"] + score_increase)
+    current_score = user_tilt_scores[user_id]["score"]
+    
+    # Handle positive score_change (increasing tilt)
+    if score_change > 0:
+        # Apply non-linear scaling based on detected tilt severity
+        if score_change <= 5:
+            scaled_change = score_change * 0.7  # Mild tilt: Reduced impact
+        elif score_change <= 10:
+            scaled_change = score_change * 1.2  # Moderate tilt: Slightly amplified
+        elif score_change <= 15:
+            scaled_change = score_change * 1.8  # High tilt: Significantly amplified
+        else:
+            scaled_change = score_change * 2.5  # Extreme tilt: Greatly amplified
+        
+        # Additional multiplier based on current tilt level
+        if current_score >= 80:
+            tilt_multiplier = 1.5  # Critical tilt - escalates quickly
+        elif current_score >= 70:
+            tilt_multiplier = 1.3  # Highly tilted
+        elif current_score >= 60:
+            tilt_multiplier = 1.15  # Moderately tilted
+        else:
+            tilt_multiplier = 1.0  # Normal state
+            
+        # Apply both adjustments
+        final_change = scaled_change * tilt_multiplier
+        
+        logger.info(f"Tilt increase: raw={score_change}, scaled={scaled_change:.1f}, " +
+                  f"with multiplier={final_change:.1f} (current={current_score})")
+        
+        # Update score with safeguard against exceeding 100
+        user_tilt_scores[user_id]["score"] = min(100, current_score + final_change)
+        
+    # Handle negative score_change (decreasing tilt)
+    elif score_change < 0:
+        # Apply non-linear scaling for positivity impact
+        # More effective when player is highly tilted (helps recovery)
+        tilt_reduction = abs(score_change)
+        
+        if current_score >= 80:
+            positivity_multiplier = 1.8  # Critical tilt - positivity has greater impact
+        elif current_score >= 70:
+            positivity_multiplier = 1.5  # Highly tilted
+        elif current_score >= 60:
+            positivity_multiplier = 1.2  # Moderately tilted
+        else:
+            positivity_multiplier = 1.0  # Normal state - standard impact
+        
+        final_reduction = tilt_reduction * positivity_multiplier
+        
+        logger.info(f"Tilt reduction: raw={score_change}, with multiplier={final_reduction:.1f} (current={current_score})")
+        
+        # Update score with safeguard against going below 0
+        user_tilt_scores[user_id]["score"] = max(0, current_score - final_reduction)
+    
     user_tilt_scores[user_id]["last_updated"] = time.time()
     
     # Store the trigger if provided
-    if trigger and score_increase > 0:
+    if trigger and score_change != 0:
         if "triggers" not in user_tilt_scores[user_id]:
             user_tilt_scores[user_id]["triggers"] = []
         
+        # Prefix positive triggers with a "+" sign
+        trigger_text = ("+" if score_change < 0 else "") + trigger[:50]
+        
         # Limit to last 10 triggers
-        user_tilt_scores[user_id]["triggers"].append(trigger[:50])  # Limit length
+        user_tilt_scores[user_id]["triggers"].append(trigger_text)
         if len(user_tilt_scores[user_id]["triggers"]) > 10:
             user_tilt_scores[user_id]["triggers"] = user_tilt_scores[user_id]["triggers"][-10:]
 
