@@ -1,0 +1,1 @@
+from bot.client import bot, setup_bot
