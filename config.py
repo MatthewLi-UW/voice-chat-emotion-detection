@@ -32,7 +32,7 @@ voice_clients = {}  # Store voice clients for each guild
 processing_queues = {}  # Audio processing queues
 
 # Tilt keywords and their weights
-# more terms in text_analysis.py
+# more terms in text_analysis.py for specific types of games
 TILT_KEYWORDS = {
     r'\bf+\s*(?:u+|you+)\b': 10,  # f u, f you
     r'\bwhat\s+(?:the\s+)?(?:f+|hell|heck)\b': 7,  # what the f, what the hell
