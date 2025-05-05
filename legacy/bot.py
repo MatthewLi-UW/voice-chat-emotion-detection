@@ -18,16 +18,13 @@ import whisper
 import torch
 
 from dotenv import load_dotenv
-
-# Add these imports at the top of your file
 from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 import torch
 
-# Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('JustFF')
 
-# Load environment variables from .env file
+# environment variables from .env file
 load_dotenv()
 
 # Initialize Discord bot with intents
@@ -37,7 +34,7 @@ intents.messages = True
 intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
-bot.remove_command('help')  # Add this line to remove the built-in help command
+bot.remove_command('help')
 
 # Global variables
 user_tilt_scores = defaultdict(lambda: {"score": 0, "last_updated": time.time(), "samples": []})
@@ -46,7 +43,7 @@ MAX_SAMPLES = 10  # Maximum number of voice samples to store per user
 voice_clients = {}  # Store voice clients for each guild
 processing_queues = {}  # Audio processing queues
 
-# Load the lightweight Whisper model
+# lightweight Whisper model
 WHISPER_MODEL_SIZE = "base"  # Options: "tiny", "base", "small", "medium", "large"
 logger.info(f"Loading Whisper {WHISPER_MODEL_SIZE} model...")
 whisper_model = whisper.load_model(WHISPER_MODEL_SIZE)
@@ -55,10 +52,10 @@ logger.info(f"Whisper model loaded successfully")
 # Load a lightweight local LLM for tilt analysis
 logger.info("Loading local LLM for tilt analysis...")
 try:
-    # Use a smaller, more lightweight model
+    
     model_name = "distilbert/distilbert-base-uncased-finetuned-sst-2-english"
     
-    # Create a simpler sentiment analysis pipeline without 8-bit quantization
+    # simpler sentiment analysis pipeline without 8-bit quantization
     tilt_pipeline = pipeline(
         "sentiment-analysis",
         model=model_name,
@@ -863,8 +860,6 @@ def analyze_audio_characteristics(audio_file):
         elif abs(audio.dBFS) < 40:
             volume_score = 1
         
-        # We could analyze other characteristics here like pitch, speaking rate, etc.
-        # For simplicity, we're mainly using volume
         
         return volume_score
     

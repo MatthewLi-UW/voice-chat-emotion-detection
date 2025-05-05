@@ -36,9 +36,6 @@ def analyze_audio_characteristics(audio_file):
         elif abs(audio.dBFS) < 40:
             volume_score = 1
         
-        # We could analyze other characteristics here like pitch, speaking rate, etc.
-        # For simplicity, we're mainly using volume
-        
         return volume_score
     
     except Exception as e:

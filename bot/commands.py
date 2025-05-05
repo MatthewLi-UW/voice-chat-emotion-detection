@@ -63,7 +63,8 @@ def setup_commands(bot):
         
         update_tilt_decay(member.id)
         tilt_score = user_tilt_scores[member.id]["score"]
-        
+        tilt_score = round(tilt_score, 1)
+
         tilt_message = get_tilt_message(tilt_score)
         
         embed = discord.Embed(
@@ -72,19 +73,19 @@ def setup_commands(bot):
             color=get_tilt_color(tilt_score)
         )
         
-        # Add a progress bar - convert to integer here
+        # progress bar - convert to integer here
         progress = "█" * int(tilt_score // 10) + "░" * int(10 - (tilt_score // 10))
         embed.add_field(name="Tilt Meter", value=f"`{progress}`", inline=False)
         
-        # Add recent triggers if available
+        # recent triggers if available
         if user_tilt_scores[member.id].get("triggers", []):
-            triggers = user_tilt_scores[member.id]["triggers"][-3:]  # Get last 3 triggers
+            triggers = user_tilt_scores[member.id]["triggers"][-6:]  # Get last 6 triggers
             formatted_triggers = []
             for trigger in triggers:
                 if trigger.startswith("+"):  # Positive triggers
-                    formatted_triggers.append(f"• 🟢 {trigger[1:]}")  # Green circle for positive
+                    formatted_triggers.append(f"• 🟢 {trigger[1:]}")
                 else:
-                    formatted_triggers.append(f"• 🔴 {trigger}")  # Red circle for negative
+                    formatted_triggers.append(f"• 🔴 {trigger}")
                     
             embed.add_field(
                 name="Recent Triggers",
