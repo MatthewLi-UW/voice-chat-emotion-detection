@@ -12,7 +12,7 @@ JustFF is a Discord bot that monitors voice and text chat for signs of player ti
 
 - `!join` — Bot joins your voice channel and starts monitoring
 - `!leave` — Bot leaves the voice channel
-- `!tilt [@user]` — Show tilt level for yourself or a mentioned user
+- `!tilt [@user]` — Show tilt level and recent triggers for yourself or a mentioned user
 - `!tilts` — Show tilt levels for all tracked users
 - `!reset [@user]` — Reset tilt score for a user or everyone
 - `!sensitivity [low|medium|high]` — Adjust tilt detection sensitivity
@@ -29,12 +29,11 @@ JustFF is a Discord bot that monitors voice and text chat for signs of player ti
 1. Clone the repository.
 2. Install dependencies
 3. Create a `.env` file with your Discord bot token
-4. Run the bot
+4. Run the bot (python main.py)
 
 ## Notes
 
-- The bot uses Whisper for speech-to-text and a local sentiment model for tilt detection.
-- For best results, run on a machine with at least 2GB RAM.
+- For best results, maybe don't run it on a Chromebook.
 - You can extend or customize tilt/positive keywords in `config.py`.
 
 ---
