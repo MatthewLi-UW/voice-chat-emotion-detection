@@ -76,7 +76,6 @@ TILT_KEYWORDS = {
     r'\bscript(?:er|ing)?\b': 7,  # script, scripter, scripting
     r'\bbot\b': 3,  # bot (as an insult)
     r'\bnoob\b': 4,  # noob
-    r'\bretard(?:ed)?\b': 9,  # retard
     r'\bidiot\b': 7,  # idiot
     r'\bmoron\b': 7,  # moron
     r'!!+': 3,  # Multiple exclamation marks
@@ -95,10 +94,10 @@ TILT_KEYWORDS = {
     r'\bgank\b': 3,  # gank (context dependent)
     r'\bjungle\s+(?:diff|gap)\b': 5,  # jungle diff/gap
     r'\b(?:mid|top|bot|adc|supp?)\s+(?:diff|gap)\b': 5,  # lane diff/gap
-    r'\bjustff\b': 5, # just ff
+    r'\bjust\s+ff\b': 10, # just ff
+    r'\bff\b': 9, # ff
 }
 
-# Add this after your TILT_KEYWORDS dictionary
 POSITIVE_KEYWORDS = {
     r'\bgood\s+(?:job|play|kill|shot|ult|move|call)\b': 3,  # good job, good play, etc.
     r'\bnice\s+(?:job|play|kill|shot|ult|move|call)\b': 3,  # nice job, nice play, etc.
